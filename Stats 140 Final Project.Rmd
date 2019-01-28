@@ -1,0 +1,287 @@
+---
+title: "Stats 140 Final Project"
+output: html_document
+---
+
+Traffic Collision Data:
+```{r}
+lacollision2010 <- read.csv('Traffic_Collision_Data_from_2010_to_Present (1).csv')
+lacollision2017 <- read.csv('Traffic_Collision_Data_from_2010_to_Present (2).csv')
+
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+lacollision2010 <- arrange(lacollision2010, Date.Occurred)
+lacollision2017 <- arrange(lacollision2017, Date.Occurred)
+
+#Creating Year variables
+lacollision2010$Year <- as.factor(c(rep(2010, length(lacollision2010$DR.Number))))
+lacollision2017$Year <- as.factor(c(rep(2017, length(lacollision2017$DR.Number))))
+
+lacollision <- rbind(lacollision2010,lacollision2017)
+head(lacollision)
+write.csv(lacollision, file = 'lacollision.csv')
+```
+
+Overall increase plot:
+
+```{r}
+dim(lacollision2010)
+dim(lacollision2017)
+
+overall <- data.frame(year = c('2010', '2017'), collisions = c(45086, 57715))
+ggplot(overall, aes(x=year, y = collisions, fill = year)) + geom_bar(stat = 'identity') + theme_minimal() + geom_text(aes(label = collisions), vjust = 1.6, size = 5.5, color = 'white') + labs(title = 'Total Change in Traffic Collisions by Year') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Crime by area from 2010 - 2017
+```{r}
+arealength2010 <- c()
+for(i in 1:21){
+  arealength2010[i] <- summary(lacollision2010$Area.Name)[[i]]
+}
+
+arealength2017 <- c()
+for(i in 1:21){
+  arealength2017[i] <- summary(lacollision2017$Area.Name)[[i]]
+}
+
+arealengths <- data.frame(levels(lacollision$Area.Name), arealength2010, arealength2017)
+names(arealengths)[1:3] <- c('Area.Name','2010','2017')
+arealengths <- arealengths %>% gather(year, crimes, c('2010','2017'))
+
+ggplot(arealengths, aes(x = Area.Name, y = crimes, fill = year)) + geom_bar(stat = 'identity', position = position_dodge()) + theme_minimal() + labs(title = 'Change in Traffic Collisions by Area by Year') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+areapercent2010 <- c()
+for(i in 1:21){
+  areapercent2010[i] <- summary(lacollision2010$Area.Name)[[i]]/length(lacollision2010$Area.Name)
+}
+areapercent2017 <- c()
+for(i in 1:21){
+  areapercent2017[i] <- summary(lacollision2017$Area.Name)[[i]]/length(lacollision2017$Area.Name)
+}
+areapercents <- data.frame(levels(lacollision2010$Area.Name), areapercent2010*100, areapercent2017*100)
+
+area.props <- c()
+
+for(i in 1:21){
+  area.props[i] <- (summary(lacollision2017$Area.Name)[[i]] - summary(lacollision2010$Area.Name)[[i]])/summary(lacollision2010$Area.Name)[[i]]
+}
+
+area.props <- data.frame(levels(lacollision2010$Area.Name),area.props*100)
+names(area.props)[1:2] <- c('Area.Name', 'Percent Change')
+
+areapercents ##Percentage of TOTAL crime occurring in each area
+area.props ##Percent change in crime between 2010 and 2017 per area
+```
+
+Age:
+
+```{r}
+fullla <- lacollision[which(complete.cases(lacollision)),]
+ggplot(fullla, aes(x = Victim.Age, fill = Year)) + geom_density(alpha = 0.5) + theme_minimal() + labs(title = 'Age at Which Traffic Collisions Occurred by Year') + theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+mean(fullla$Victim.Age)
+
+summary(lacollision2010[which(complete.cases(lacollision2010)),]$Victim.Age)
+summary(lacollision2017[which(complete.cases(lacollision2017)),]$Victim.Age)
+```
+
+Mean age decreased by very little, only about 0.67 years. However, the median age did decrease by 2 years. 
+
+Time Occured:
+
+```{r}
+ggplot(lacollision, aes(x = Time.Occurred, fill = Year)) + geom_density(alpha = 0.5) + theme_minimal()+ labs(title = 'Times at Which Traffic Collisions Occurred by Year') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+mean(fullla$Time.Occurred)
+
+summary(lacollision2010[which(complete.cases(lacollision2010)),]$Time.Occurred)
+summary(lacollision2017[which(complete.cases(lacollision2017)),]$Time.Occurred)
+```
+
+Time occurred changed by very little, not much correlation. 
+
+Gender: 
+
+```{r}
+genderlength2010 <- c()
+for(i in 1:5){
+  genderlength2010[i] <- summary(lacollision2010$Victim.Sex)[[i]]
+}
+
+genderlength2017 <- c()
+for(i in 1:5){
+  genderlength2017[i] <- summary(lacollision2017$Victim.Sex)[[i]]
+}
+
+genderlengths <- data.frame(levels(lacollision2017$Victim.Sex), genderlength2010, genderlength2017)
+names(genderlengths)[1:3] <- c('Victim.Sex','2010','2017')
+
+genderlengths <- genderlengths %>% gather(year, crimes, c('2010','2017'))
+genderlengths <- genderlengths[c(2,4,5,7,9,10),]
+
+
+
+ggplot(genderlengths, aes(x = Victim.Sex, y = crimes, fill = year)) + geom_bar(stat = 'identity', position = position_dodge()) + theme_minimal() + labs(title = 'Traffic Collisions by Gender by Year') + theme(plot.title = element_text(hjust = 0.5))
+
+##ggplot(lacollision, aes(x = Victim.Sex, fill = Year)) + geom_bar() + facet_wrap(~Year) + theme_minimal()+ labs(title = 'Traffic Collisions by Gender by Year') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+gender.props <- c()
+
+for(i in 1:5){
+  gender.props[i] <- (summary(lacollision2017$Victim.Sex)[[i]] - summary(lacollision2010$Victim.Sex)[[i]])/summary(lacollision2010$Victim.Sex)[[i]]
+}
+
+gender.props <- data.frame(levels(lacollision2010$Victim.Sex),gender.props*100)
+names(gender.props)[1:2] <- c('Victim.Sex', 'Percent Change')
+gender.props <- gender.props[c(2,4,5),]
+
+gender.props
+```
+
+Men and women getting into traffic collisions increased by similar proportions. The only one with a significant increase was "Unknown", but unsure how to approach that. 
+
+
+Data Cleaning for Victim.Descent: 
+
+```{r}
+lacollision2010$Victim.Descent <- as.character(lacollision2010$Victim.Descent)
+lacollision2017$Victim.Descent <- as.character(lacollision2017$Victim.Descent)
+
+## Rename the Descent 2010
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="A"] <- "Other Asian"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="B"] <- "Black"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="C"] <- "Chinese"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="D"] <- "Cambodian"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="F"] <- "Filipino"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="G"] <- "Guamanian"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="H"] <- "Hispanic"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="I"] <- "American Indian/Alaskan Native"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="J"] <- "Japanese"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="K"] <- "Korean"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="L"] <- "Laotian"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="O"] <- "Other"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="P"] <- "Pacific Islander"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="S"] <- "Samoan"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="U"] <- "Hawaiian"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="V"] <- "Vietnamese"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="W"] <- "White"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="X"] <- "Unknown"
+lacollision2010$Victim.Descent[lacollision2010$Victim.Descent=="Z"] <- "Asian Indian"
+
+## Rename the Descent 2017
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="A"] <- "Other Asian"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="B"] <- "Black"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="C"] <- "Chinese"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="D"] <- "Cambodian"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="F"] <- "Filipino"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="G"] <- "Guamanian"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="H"] <- "Hispanic"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="I"] <- "American Indian/Alaskan Native"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="J"] <- "Japanese"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="K"] <- "Korean"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="L"] <- "Laotian"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="O"] <- "Other"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="P"] <- "Pacific Islander"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="S"] <- "Samoan"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="U"] <- "Hawaiian"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="V"] <- "Vietnamese"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="W"] <- "White"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="X"] <- "Unknown"
+lacollision2017$Victim.Descent[lacollision2017$Victim.Descent=="Z"] <- "Asian Indian"
+
+target <- c("Black", "Filipino", "Hispanic", "Korean", "Other Asian", "Unknown", "White")
+
+coll2010 <- lacollision2010 %>% select_all() %>% filter(Victim.Descent %in% target)
+
+coll2017 <- lacollision2017 %>% select_all() %>% filter(Victim.Descent %in% target)
+
+coll2010$Victim.Descent <- as.factor(coll2010$Victim.Descent)
+coll2017$Victim.Descent <- as.factor(coll2017$Victim.Descent)
+```
+
+```{r}
+library(tidyr)
+#lacollision2017 <- lacollision2017[-37897,]
+
+#lacollision2017$Victim.Descent <- droplevels.factor(lacollision2017$Victim.Descent)
+#levels(lacollision2017$Victim.Descent)
+
+lacollision2010$Victim.Descent <- as.factor(lacollision2010$Victim.Descent)
+lacollision2017$Victim.Descent <- as.factor(lacollision2017$Victim.Descent)
+
+descentlength2010 <- c()
+for(i in 1:7){
+  descentlength2010[i] <- summary(coll2010$Victim.Descent)[[i]]
+}
+
+descentlength2017 <- c()
+for(i in 1:7){
+  descentlength2017[i] <- summary(coll2017$Victim.Descent)[[i]]
+}
+
+descentlengths <- data.frame(levels(coll2010$Victim.Descent), descentlength2010, descentlength2017)
+names(descentlengths)[1:3] <- c('Victim.Descent','2010','2017')
+descentlengths <- descentlengths %>% gather(year, crimes, c('2010','2017'))
+head(descentlengths)
+```
+
+```{r}
+library(ggplot2)
+ggplot(descentlengths,aes(x = Victim.Descent, y = crimes, fill = year)) + geom_bar(stat = 'identity', position = position_dodge()) + theme_minimal() + labs(title = 'Traffic Collisions by Ethnicity by Year') + theme(plot.title = element_text(hjust = 0.5)) + geom_text(position = position_dodge(0.9), aes(label = crimes), vjust = -0.5, size = 3, color = 'black')
+
+descent.props <- c()
+
+for(i in 1:18){
+  descent.props[i] <- (summary(lacollision2017$Victim.Descent)[[i+1]] - summary(lacollision2010$Victim.Descent)[[i+1]])/summary(lacollision2010$Victim.Descent)[[i+1]]
+}
+
+descent.props <- data.frame(levels(lacollision2010$Victim.Descent)[-1],descent.props*100)
+names(descent.props)[1:2] <- c('Victim.Descent', 'Percent Change')
+descent.props  ## Percent Change in traffic collisions between 2010 and 2017 for each area
+
+despercent2010 <- c()
+for(i in 1:18){
+  despercent2010[i] <- summary(lacollision2010$Victim.Descent)[[i+1]]/length(lacollision2010$Victim.Descent)
+}
+despercent2017 <- c()
+for(i in 1:18){
+  despercent2017[i] <- summary(lacollision2017$Victim.Descent)[[i+1]]/length(lacollision2017$Victim.Descent)
+}
+despercents <- data.frame(levels(lacollision2010$Victim.Descent)[-1], despercent2010*100, despercent2017*100)
+despercents ##Percentage of Total Collisions occurring per area
+```
+
+Descent Code: *A - Other Asian *B - Black C - Chinese D - Cambodian *F - Filipino G - Guamanian *H - Hispanic/Latin/Mexican I - American Indian/Alaskan Native J - Japanese *K - Korean L - Laotian O - Other P - Pacific Islander S - Samoan U - Hawaiian V - Vietnamese *W - White *X - Unknown Z - Asian Indian
+
+37% of collisions occured with those of Hispanic descent, even though around 47.7% of LA is Hispanic.
+With the second highest rate, those of White descent committed around 24% of traffic collisions, even though 29.4% is White. 
+
+Analysis of the Months:
+
+```{r}
+months_2010 <- substr(lacollision2010$Date.Occurred,1,2)
+months_2017 <- substr(lacollision2017$Date.Occurred,1,2)
+
+lacollision2010 <- data.frame(lacollision2010, as.factor(months_2010))
+lacollision2017 <- data.frame(lacollision2017, as.factor(months_2017))
+
+monthlength2010 <- c()
+for(i in 1:12){
+  monthlength2010[i] <- summary(lacollision2010$as.factor.months_2010.)[[i]]
+}
+
+monthlength2017 <- c()
+for(i in 1:12){
+  monthlength2017[i] <- summary(lacollision2017$as.factor.months_2017.)[[i]]
+}
+
+ggplot(lacollision2017, aes(x = months_2017)) + geom_bar() + theme_minimal()
+```
